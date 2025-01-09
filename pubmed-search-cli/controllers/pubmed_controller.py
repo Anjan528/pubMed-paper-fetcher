@@ -2,9 +2,11 @@ import requests
 import re
 from requests.exceptions import Timeout, ConnectionError
 
+# Base URL for PubMed API
 BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 DETAILS_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
 
+#Fetches PubMed IDs for a given query.
 def fetch_pubmed_ids(query, debug=False):
     params = {
         "db": "pubmed",
@@ -34,7 +36,7 @@ def fetch_pubmed_ids(query, debug=False):
         print(f"Found {len(ids)} papers.")
     return ids
 
-
+#Retrieves metadata for a specific PubMed ID.
 def fetch_paper_details(paper_id):
     details_params = {
         "db": "pubmed",
@@ -57,25 +59,28 @@ def fetch_paper_details(paper_id):
 
     return details_response.json().get("result", {}).get(paper_id, {})
 
-
+#Extracts non-academic authors and their affiliations from a list of authors.
 def extract_non_academic_authors(authors):
     non_academic_authors = []
     company_affiliations = []
+    # Check if the author's affiliation contains keywords indicating non-academic affiliation
     for author in authors:
         affiliation = author.get("affiliation", "")
+        # Check if the affiliation contains keywords indicating non-academic affiliation
         if re.search(r"\b(pharma|biotech|company|corp|inc|ltd)\b", affiliation, re.IGNORECASE):
             non_academic_authors.append(author.get("name", ""))
             company_affiliations.append(affiliation)
     return non_academic_authors, company_affiliations
 
-
+#Extracts the email of the corresponding author from a list of authors.
 def extract_corresponding_email(authors):
     for author in authors:
+        # Check if the author's email is present in the affiliation field
         if "@" in author.get("affiliation", ""):
             return author.get("affiliation").split()[-1]
     return ""
 
-
+#Processes the paper data for a list of PubMed IDs.
 def process_paper_data(ids, debug=False):
     paper_data = []
     for paper_id in ids:
